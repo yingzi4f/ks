@@ -66,6 +66,15 @@ class ProgressIn(BaseModel):
 app = FastAPI(title="保安员考试")
 
 
+@app.middleware("http")
+async def no_store_frontend(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith((".html", ".js", ".css")):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
 @app.post("/api/login")
 def login(body: LoginIn):
     username = normalize_username(body.username)

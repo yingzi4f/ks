@@ -24,7 +24,8 @@
     pracBar: document.getElementById("pracBar"),
     pracPrev: document.getElementById("pracPrev"),
     pracNext: document.getElementById("pracNext"),
-    loginView: document.getElementById("loginView"),
+    pracGate: document.getElementById("pracGate"),
+    pracMain: document.getElementById("pracMain"),
     usernameInput: document.getElementById("usernameInput"),
     loginBtn: document.getElementById("loginBtn"),
     loginErr: document.getElementById("loginErr"),
@@ -357,7 +358,7 @@
       records: {},
     };
     renderUser();
-    setMode("search");
+    setMode("practice");
   }
 
   function shuffle(list) {
@@ -417,27 +418,29 @@
     return { ok, bad };
   }
 
+  function syncPracticeGate() {
+    const on = Boolean(state.username);
+    if (els.pracGate) els.pracGate.hidden = on;
+    if (els.pracMain) els.pracMain.hidden = !on;
+    if (on) {
+      if (!state.practice.ids.length) buildDeck(state.practice.deck || "seq", true);
+      renderPractice();
+    }
+  }
+
   function setMode(mode) {
     state.mode = mode;
     els.searchView.hidden = mode !== "search";
+    els.practiceView.hidden = mode !== "practice";
     els.tabSearch.classList.toggle("active", mode === "search");
     els.tabPractice.classList.toggle("active", mode === "practice");
-    if (mode !== "practice") {
-      els.loginView.hidden = true;
-      els.practiceView.hidden = true;
-      return;
+    if (mode === "practice") {
+      syncPracticeGate();
+      if (!state.username) {
+        setTimeout(() => els.usernameInput && els.usernameInput.focus(), 50);
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    if (!state.username) {
-      els.loginView.hidden = false;
-      els.practiceView.hidden = true;
-      setTimeout(() => els.usernameInput.focus(), 50);
-      return;
-    }
-    els.loginView.hidden = true;
-    els.practiceView.hidden = false;
-    if (!state.practice.ids.length) buildDeck(state.practice.deck || "seq", true);
-    renderPractice();
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function renderPracticeMeta() {
@@ -715,6 +718,7 @@
     els.logoutBtn.addEventListener("click", logout);
     els.loginHeaderBtn.addEventListener("click", () => {
       setMode("practice");
+      if (els.usernameInput) els.usernameInput.focus();
     });
   }
 
