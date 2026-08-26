@@ -22,6 +22,10 @@
         <h1>保安员考试</h1>
         <p id="metaLine">正在载入题库…</p>
       </div>
+      <div class="user-bar" id="userBar" hidden>
+        <span id="userLabel"></span>
+        <button type="button" id="logoutBtn">退出</button>
+      </div>
     </header>
 
     <nav class="mode-tabs" aria-label="功能切换">
@@ -51,7 +55,7 @@
       </section>
 
       <main class="stage">
-        <p class="hint" id="statusLine">输入关键字后会列出相关题目。先点选一道，再点「查询」看答案。</p>
+        <p class="hint" id="statusLine">输入关键字后会列出相关题目，点选一道即可在下方看到答案。</p>
         <section class="match-block" id="matchBlock" hidden>
           <div class="match-head">
             <h2>匹配题目</h2>
@@ -61,6 +65,23 @@
         </section>
         <article class="answer-card" id="answerCard" hidden></article>
       </main>
+    </section>
+
+    <section id="loginView" hidden>
+      <div class="login-card">
+        <h2>刷题登录</h2>
+        <p>输入用户名后开始刷题。进度、对错和错题本都按这个名字保存，刷新页面也不会丢。</p>
+        <label class="search-label" for="usernameInput">用户名</label>
+        <input
+          id="usernameInput"
+          type="text"
+          maxlength="20"
+          autocomplete="username"
+          placeholder="例如：张三"
+        >
+        <button type="button" id="loginBtn">进入刷题</button>
+        <p class="login-err" id="loginErr" hidden></p>
+      </div>
     </section>
 
     <section id="practiceView" hidden>
@@ -83,7 +104,7 @@
       </div>
     </section>
 
-    <footer class="colophon">本地题库 · 手机刷题 · 无需联网</footer>
+    <footer class="colophon">搜题可直接用 · 刷题需登录保存进度</footer>
   </div>
   <script src="js/app.js"></script>
 </body>

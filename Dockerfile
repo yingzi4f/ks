@@ -11,11 +11,17 @@ RUN mkdir -p web/data data \
         --db data/questions.db \
         --json web/data/questions.json
 
-FROM nginx:1.27-alpine
+FROM python:3.12-slim
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY web/ /usr/share/nginx/html/
-COPY --from=importer /build/web/data/questions.json /usr/share/nginx/html/data/questions.json
-COPY --from=importer /build/data/questions.db /usr/share/nginx/html/data/questions.db
+WORKDIR /app
+ENV PROGRESS_DIR=/app/progress
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY web/ /app/web/
+COPY --from=importer /build/web/data/questions.json /app/web/data/questions.json
+COPY --from=importer /build/data/questions.db /app/web/data/questions.db
+COPY server.py /app/server.py
+RUN mkdir -p /app/progress
 
 EXPOSE 80
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "80"]

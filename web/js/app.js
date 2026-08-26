@@ -1,7 +1,7 @@
 (() => {
   const CHIPS = ["消防", "押运", "诈骗", "交通", "巡逻", "守护"];
   const MAX_LIST = 80;
-  const STORE_KEY = "baoan-practice-v1";
+  const USER_KEY = "baoan-username";
 
   const els = {
     metaLine: document.getElementById("metaLine"),
@@ -24,6 +24,13 @@
     pracBar: document.getElementById("pracBar"),
     pracPrev: document.getElementById("pracPrev"),
     pracNext: document.getElementById("pracNext"),
+    loginView: document.getElementById("loginView"),
+    usernameInput: document.getElementById("usernameInput"),
+    loginBtn: document.getElementById("loginBtn"),
+    loginErr: document.getElementById("loginErr"),
+    userBar: document.getElementById("userBar"),
+    userLabel: document.getElementById("userLabel"),
+    logoutBtn: document.getElementById("logoutBtn"),
   };
 
   const state = {
@@ -33,6 +40,7 @@
     selectedId: null,
     activeChip: "",
     mode: "search",
+    username: "",
     practice: {
       deck: "seq",
       ids: [],
@@ -207,34 +215,146 @@
     return left === right;
   }
 
-  function loadPractice() {
+  function storeKey() {
+    return `baoan-practice:${state.username || "guest"}`;
+  }
+
+  function snapshot() {
+    return {
+      deck: state.practice.deck,
+      index: state.practice.index,
+      ids: state.practice.ids,
+      records: state.practice.records,
+    };
+  }
+
+  function applySnapshot(saved) {
+    if (!saved || typeof saved !== "object") return;
+    state.practice.records = saved.records || {};
+    if (saved.deck) state.practice.deck = saved.deck;
+    if (Number.isInteger(saved.index)) state.practice.index = saved.index;
+    if (Array.isArray(saved.ids) && saved.ids.length) {
+      state.practice.ids = saved.ids
+        .map((id) => Number(id))
+        .filter((id) => state.byId.has(id));
+    }
+  }
+
+  function loadLocal() {
+    if (!state.username) return;
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      const raw = localStorage.getItem(storeKey());
       if (!raw) return;
-      const saved = JSON.parse(raw);
-      if (saved && typeof saved === "object") {
-        state.practice.records = saved.records || {};
-        if (saved.deck) state.practice.deck = saved.deck;
-        if (Number.isInteger(saved.index)) state.practice.index = saved.index;
-      }
+      applySnapshot(JSON.parse(raw));
     } catch {
       /* ignore */
     }
   }
 
-  function savePractice() {
+  function saveLocal() {
+    if (!state.username) return;
     try {
-      localStorage.setItem(
-        STORE_KEY,
-        JSON.stringify({
-          deck: state.practice.deck,
-          index: state.practice.index,
-          records: state.practice.records,
-        })
-      );
+      localStorage.setItem(storeKey(), JSON.stringify(snapshot()));
     } catch {
       /* ignore */
     }
+  }
+
+  let saveTimer = 0;
+  function savePractice() {
+    if (!state.username) return;
+    saveLocal();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      fetch(`/api/progress/${encodeURIComponent(state.username)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snapshot()),
+      }).catch(() => {});
+    }, 200);
+  }
+
+  async function loadRemote() {
+    if (!state.username) return;
+    try {
+      const res = await fetch(`/api/progress/${encodeURIComponent(state.username)}`);
+      if (!res.ok) return;
+      applySnapshot(await res.json());
+      saveLocal();
+    } catch {
+      loadLocal();
+    }
+  }
+
+  function showLoginError(message) {
+    els.loginErr.hidden = !message;
+    els.loginErr.textContent = message || "";
+  }
+
+  function renderUser() {
+    const on = Boolean(state.username);
+    els.userBar.hidden = !on;
+    els.userLabel.textContent = on ? state.username : "";
+  }
+
+  async function login(name) {
+    const username = String(name || "").trim();
+    if (!username) {
+      showLoginError("请输入用户名");
+      return false;
+    }
+    if (!/^[\u4e00-\u9fffA-Za-z0-9_\-]{1,20}$/.test(username)) {
+      showLoginError("用户名请用 1 到 20 个汉字、字母或数字");
+      return false;
+    }
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = data.detail;
+        const message =
+          typeof detail === "string"
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map((item) => item.msg || item).join("；")
+              : "登录失败";
+        showLoginError(message);
+        return false;
+      }
+      state.username = data.username || username;
+    } catch {
+      state.username = username;
+    }
+    localStorage.setItem(USER_KEY, state.username);
+    showLoginError("");
+    renderUser();
+    await loadRemote();
+    if (!state.practice.ids.length) buildDeck(state.practice.deck || "seq", true);
+    else {
+      const last = Math.max(state.practice.ids.length - 1, 0);
+      state.practice.index = Math.min(Math.max(state.practice.index, 0), last);
+      resetCurrentPicks();
+    }
+    return true;
+  }
+
+  function logout() {
+    state.username = "";
+    localStorage.removeItem(USER_KEY);
+    state.practice = {
+      deck: "seq",
+      ids: [],
+      index: 0,
+      picked: [],
+      submitted: false,
+      records: {},
+    };
+    renderUser();
+    setMode("search");
   }
 
   function shuffle(list) {
@@ -297,14 +417,24 @@
   function setMode(mode) {
     state.mode = mode;
     els.searchView.hidden = mode !== "search";
-    els.practiceView.hidden = mode !== "practice";
     els.tabSearch.classList.toggle("active", mode === "search");
     els.tabPractice.classList.toggle("active", mode === "practice");
-    if (mode === "practice") {
-      if (!state.practice.ids.length) buildDeck(state.practice.deck);
-      renderPractice();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (mode !== "practice") {
+      els.loginView.hidden = true;
+      els.practiceView.hidden = true;
+      return;
     }
+    if (!state.username) {
+      els.loginView.hidden = false;
+      els.practiceView.hidden = true;
+      setTimeout(() => els.usernameInput.focus(), 50);
+      return;
+    }
+    els.loginView.hidden = true;
+    els.practiceView.hidden = false;
+    if (!state.practice.ids.length) buildDeck(state.practice.deck || "seq", true);
+    renderPractice();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function renderPracticeMeta() {
@@ -424,7 +554,7 @@
   }
 
   function syncQueryBtn() {
-    els.queryBtn.textContent = state.selectedId ? "看答案" : "查询";
+    els.queryBtn.textContent = "查询";
   }
 
   function renderAnswer(question, query) {
@@ -497,7 +627,7 @@
     els.answerCard.hidden = true;
     syncQueryBtn();
     if (!trimmed) {
-      resetView("输入关键字后会列出相关题目。先点选一道，再点「查询」看答案。");
+      resetView("输入关键字后会列出相关题目，点选一道即可在下方看到答案。");
       return;
     }
     const ranked = search(trimmed);
@@ -509,35 +639,9 @@
       return;
     }
     els.statusLine.hidden = false;
-    els.statusLine.textContent = "请点选下面的题目，再点「看答案」。";
+    els.statusLine.textContent = "请点选下面的题目，答案会显示在列表下方。";
     els.matchBlock.hidden = false;
     renderList(ranked, trimmed);
-  }
-
-  function showSelectedAnswer() {
-    const query = els.input.value.trim();
-    if (!query) {
-      resetView("请先输入题目关键字。");
-      return;
-    }
-    if (!state.ranked.length) applySearch(query);
-    if (!state.ranked.length) return;
-    if (!state.selectedId) {
-      els.statusLine.hidden = false;
-      els.statusLine.textContent = "请先点选一道题目，再点「看答案」。";
-      els.matchBlock.hidden = false;
-      els.answerCard.hidden = true;
-      return;
-    }
-    const hit = state.ranked.find((item) => item.q.id === state.selectedId);
-    if (!hit) {
-      state.selectedId = null;
-      syncQueryBtn();
-      els.statusLine.textContent = "请先点选一道题目，再点「看答案」。";
-      return;
-    }
-    els.statusLine.hidden = true;
-    renderAnswer(hit.q, query);
   }
 
   function bind() {
@@ -554,13 +658,11 @@
     els.input.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
-        if (state.selectedId) showSelectedAnswer();
-        else applySearch(els.input.value);
+        applySearch(els.input.value);
       }
     });
     els.queryBtn.addEventListener("click", () => {
-      if (state.selectedId) showSelectedAnswer();
-      else applySearch(els.input.value);
+      applySearch(els.input.value);
     });
     els.clearBtn.addEventListener("click", () => {
       els.input.value = "";
@@ -576,11 +678,9 @@
       const hit = state.ranked.find((item) => item.q.id === id);
       if (!hit) return;
       state.selectedId = id;
-      els.answerCard.hidden = true;
       renderList(state.ranked, els.input.value);
-      syncQueryBtn();
-      els.statusLine.hidden = false;
-      els.statusLine.textContent = "已选中题目，请点「看答案」。";
+      els.statusLine.hidden = true;
+      renderAnswer(hit.q, els.input.value);
     });
 
     document.querySelector(".prac-toolbar").addEventListener("click", (ev) => {
@@ -600,6 +700,16 @@
     });
     els.pracPrev.addEventListener("click", () => gotoIndex(state.practice.index - 1));
     els.pracNext.addEventListener("click", () => gotoIndex(state.practice.index + 1));
+    els.loginBtn.addEventListener("click", async () => {
+      if (await login(els.usernameInput.value)) setMode("practice");
+    });
+    els.usernameInput.addEventListener("keydown", async (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        if (await login(els.usernameInput.value)) setMode("practice");
+      }
+    });
+    els.logoutBtn.addEventListener("click", logout);
   }
 
   function syncChips() {
@@ -629,7 +739,6 @@
     renderChips();
     bind();
     syncQueryBtn();
-    loadPractice();
     try {
       const res = await fetch("data/questions.json", { cache: "no-cache" });
       if (!res.ok) throw new Error(res.statusText);
@@ -638,7 +747,8 @@
       state.byId = new Map(state.questions.map((q) => [q.id, q]));
       const count = data.meta?.count ?? state.questions.length;
       els.metaLine.textContent = `题库 ${count} 题 · 手机刷题`;
-      buildDeck(state.practice.deck || "seq", true);
+      const savedUser = localStorage.getItem(USER_KEY);
+      if (savedUser) await login(savedUser);
       const preset = new URLSearchParams(location.search).get("q");
       const mode = new URLSearchParams(location.search).get("mode");
       if (mode === "practice") setMode("practice");

@@ -5,3 +5,4 @@ __pycache__
 .venv
 *.md
 web/data/shot-*.png
+progress
