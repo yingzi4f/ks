@@ -85,7 +85,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .user-bar span {
@@ -103,9 +104,17 @@ body {
   background: var(--navy-2);
   color: #d8ccb4;
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 13px;
+  padding: 8px 14px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
+}
+
+.login-header-btn {
+  background: linear-gradient(180deg, #d33b42 0%, var(--seal) 100%) !important;
+  color: #fff !important;
+  border: 0 !important;
+  min-width: 72px;
 }
 
 .login-card {

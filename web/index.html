@@ -22,9 +22,10 @@
         <h1>保安员考试</h1>
         <p id="metaLine">正在载入题库…</p>
       </div>
-      <div class="user-bar" id="userBar" hidden>
-        <span id="userLabel"></span>
-        <button type="button" id="logoutBtn">退出</button>
+      <div class="user-bar" id="userBar">
+        <span id="userLabel" hidden></span>
+        <button type="button" id="loginHeaderBtn" class="login-header-btn">登录</button>
+        <button type="button" id="logoutBtn" hidden>退出</button>
       </div>
     </header>
 
@@ -79,7 +80,7 @@
           autocomplete="username"
           placeholder="例如：张三"
         >
-        <button type="button" id="loginBtn">进入刷题</button>
+        <button type="button" id="loginBtn">登录</button>
         <p class="login-err" id="loginErr" hidden></p>
       </div>
     </section>

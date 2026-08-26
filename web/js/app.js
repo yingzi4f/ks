@@ -30,6 +30,7 @@
     loginErr: document.getElementById("loginErr"),
     userBar: document.getElementById("userBar"),
     userLabel: document.getElementById("userLabel"),
+    loginHeaderBtn: document.getElementById("loginHeaderBtn"),
     logoutBtn: document.getElementById("logoutBtn"),
   };
 
@@ -293,8 +294,10 @@
 
   function renderUser() {
     const on = Boolean(state.username);
-    els.userBar.hidden = !on;
+    els.userLabel.hidden = !on;
     els.userLabel.textContent = on ? state.username : "";
+    els.loginHeaderBtn.hidden = on;
+    els.logoutBtn.hidden = !on;
   }
 
   async function login(name) {
@@ -710,6 +713,9 @@
       }
     });
     els.logoutBtn.addEventListener("click", logout);
+    els.loginHeaderBtn.addEventListener("click", () => {
+      setMode("practice");
+    });
   }
 
   function syncChips() {
