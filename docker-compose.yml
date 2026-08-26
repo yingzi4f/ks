@@ -1,0 +1,10 @@
+services:
+  daan:
+    build: .
+    image: baoan-quiz:latest
+    container_name: baoan-quiz
+
+    ports:
+      - "8181:80"
+
+    restart: unless-stopped

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#141b2d">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>保安员考试</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <div class="masthead-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="32" height="32">
+          <path fill="#e8c072" d="M24 4l16 6v12c0 11.2-6.8 20.4-16 24-9.2-3.6-16-12.8-16-24V10l16-6z"/>
+          <path fill="#141b2d" d="M24 10.2l-9.5 3.5v7.1c0 7.6 4.5 13.9 9.5 16.6 5-2.7 9.5-9 9.5-16.6v-7.1L24 10.2zm.8 18.3l-6.2-6.2 1.8-1.8 4.4 4.4 7.1-7.1 1.8 1.8-8.9 8.9z"/>
+        </svg>
+      </div>
+      <div class="masthead-copy">
+        <h1>保安员考试</h1>
+        <p id="metaLine">正在载入题库…</p>
+      </div>
+    </header>
+
+    <nav class="mode-tabs" aria-label="功能切换">
+      <button type="button" id="tabSearch" class="mode-tab active" data-mode="search">搜题</button>
+      <button type="button" id="tabPractice" class="mode-tab" data-mode="practice">刷题</button>
+    </nav>
+
+    <section id="searchView">
+      <section class="search-panel">
+        <label class="search-label" for="keywordInput">搜题目</label>
+        <div class="search-row">
+          <input
+            id="keywordInput"
+            type="search"
+            enterkeyhint="search"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="输入题目关键字"
+          >
+          <button id="queryBtn" type="button">查询</button>
+        </div>
+        <div class="search-tools">
+          <div class="chips" id="chips"></div>
+          <button id="clearBtn" class="clear-btn" type="button" hidden>清空</button>
+        </div>
+      </section>
+
+      <main class="stage">
+        <p class="hint" id="statusLine">输入关键字后会列出相关题目。先点选一道，再点「查询」看答案。</p>
+        <section class="match-block" id="matchBlock" hidden>
+          <div class="match-head">
+            <h2>匹配题目</h2>
+            <span id="matchCount"></span>
+          </div>
+          <ul class="match-list" id="matchList"></ul>
+        </section>
+        <article class="answer-card" id="answerCard" hidden></article>
+      </main>
+    </section>
+
+    <section id="practiceView" hidden>
+      <div class="prac-toolbar">
+        <button type="button" class="prac-chip active" data-deck="seq">顺序练习</button>
+        <button type="button" class="prac-chip" data-deck="rand">随机练习</button>
+        <button type="button" class="prac-chip" data-deck="wrong">错题本</button>
+      </div>
+      <div class="prac-progress">
+        <div class="prac-progress-row">
+          <strong id="pracPos">0 / 0</strong>
+          <span id="pracStats">答对 0 · 答错 0</span>
+        </div>
+        <div class="prac-bar" aria-hidden="true"><i id="pracBar"></i></div>
+      </div>
+      <article class="prac-card" id="pracCard"></article>
+      <div class="prac-nav">
+        <button type="button" id="pracPrev">上一题</button>
+        <button type="button" id="pracNext" class="primary">下一题</button>
+      </div>
+    </section>
+
+    <footer class="colophon">本地题库 · 手机刷题 · 无需联网</footer>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>
